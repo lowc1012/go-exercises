@@ -1,2 +1,3 @@
-# go-worker-pool
-A simple implementation of worker pool in Go
+# go-exercises
+
+This repo gathered exercises and recorded my learning notes for go.
