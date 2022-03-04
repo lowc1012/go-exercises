@@ -5,17 +5,17 @@
   ------------------------------------------------------------
   What is worker pool?
 
-  Worker pools are a model in which a fixed number of m workers
+  Worker pool is a model which a fixed number of m workers
   work their way through n tasks in a task queue. Task stays in
   a queue until a worker finished up its current task and pulls
   a new one off.
   ------------------------------------------------------------
-  Why we need worker pool?
+  Why we need Worker pool model?
 
   1. To amortize the costs of creating new threads
-  2. To control the number of concurrently running tasks (if spawn
-     too many goroutine, your machine will quickly run out of memory
-     and the CPU)
+  2. To control the number of concurrently running tasks (if program
+     spawn too many goroutine, your machine will quickly run out of
+     memory and the CPU)
   ------------------------------------------------------------
   Implementation
 
