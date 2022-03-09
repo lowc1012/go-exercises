@@ -25,31 +25,31 @@ func Constructor(capacity int) LRUCache {
 	}
 }
 
-func (this *LRUCache) Get(key int) int {
-	if node, exist := this.m[key]; exist {
+func (c *LRUCache) Get(key int) int {
+	if node, exist := c.m[key]; exist {
 		// move the node to front
-		this.l.MoveToFront(node)
+		c.l.MoveToFront(node)
 		return node.Value.(*list.Element).Value.(Pair).Val
 	}
 	return -1
 }
 
-func (this *LRUCache) Put(key int, value int) {
+func (c *LRUCache) Put(key int, value int) {
 	// if cache hit
-	if node, exist := this.m[key]; exist {
-		// update the value of this node
+	if node, exist := c.m[key]; exist {
+		// update the value of c node
 		node.Value.(*list.Element).Value = Pair{
 			key,
 			value,
 		}
 		// move the node to front
-		this.l.MoveToFront(node)
+		c.l.MoveToFront(node)
 
 		// if cache miss
 	} else {
 
 		// push the new node into list
-		ptr := this.l.PushFront(&list.Element{
+		ptr := c.l.PushFront(&list.Element{
 			Value: Pair{
 				Key: key,
 				Val: value,
@@ -57,17 +57,17 @@ func (this *LRUCache) Put(key int, value int) {
 		})
 
 		// add the new item into map
-		this.m[key] = ptr
+		c.m[key] = ptr
 
 		// if cache is full
-		if this.l.Len() > this.capacity {
+		if c.l.Len() > c.capacity {
 			// find the node we want to delete
-			lastKey := this.l.Back().Value.(*list.Element).Value.(Pair).Key
+			lastKey := c.l.Back().Value.(*list.Element).Value.(Pair).Key
 			// delete the item in map
-			delete(this.m, lastKey)
+			delete(c.m, lastKey)
 
 			// delete the node
-			this.l.Remove(this.l.Back())
+			c.l.Remove(c.l.Back())
 		}
 	}
 }
