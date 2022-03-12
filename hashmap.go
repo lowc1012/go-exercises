@@ -70,12 +70,12 @@ func (h *HashMap) Delete(key string) {
 			for next != nil {
 				if next.Key == key {
 					head.Next = next.Next
+					return
 				}
 				next = next.Next
 			}
 		}
 	}
-	return
 }
 
 func (h *HashMap) getIndex(key string) int {
