@@ -71,7 +71,7 @@ func (l *SinglyLinkedList) Clear() {
 
 func (l *SinglyLinkedList) Reverse() {
 	curr := l.head
-	prev := &Node{}
+	var prev *Node
 	for curr != nil {
 		next := curr.Next
 		curr.Next = prev
