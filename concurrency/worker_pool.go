@@ -27,6 +27,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -43,77 +44,97 @@ func (t *Task) Do() error {
 
 type WorkerPool struct {
 	PoolSize    int
-	tasksSize   int
 	tasksChan   chan Task
 	resultsChan chan Task
-	Results     func() []Task
+	quit        chan bool
+	workersWg   sync.WaitGroup
 }
 
-func NewWorkerPool(tasks []Task, size int) *WorkerPool {
-	tasksChan := make(chan Task, len(tasks))
-	resultsChan := make(chan Task, len(tasks))
+// Submit submits a task into tasks channel
+func (pool *WorkerPool) Submit(task Task) {
+	pool.tasksChan <- task
+}
 
-	// create tasks channel
-	for _, t := range tasks {
-		tasksChan <- t
-	}
-	close(tasksChan) // close the channel to indicate that’s all the work we have.
-
+func NewWorkerPool(numWorker int) *WorkerPool {
+	const buffSize = 100
 	wp := &WorkerPool{
-		PoolSize:    size,
-		tasksSize:   len(tasks),
-		tasksChan:   tasksChan,
-		resultsChan: resultsChan,
+		PoolSize:    numWorker,
+		tasksChan:   make(chan Task, buffSize),
+		resultsChan: make(chan Task, buffSize),
+		quit:        make(chan bool),
 	}
 
-	wp.Results = wp.results
 	return wp
 }
 
-// Do a task and receive result(err) from task. Finally, send the result to results channel
+// Results Retrieve results of the tasks
+func (pool *WorkerPool) Results() <-chan Task {
+	return pool.resultsChan
+}
+
+// worker keeps consuming tasks from `tasksChan`, and sends the result to results channel
 func (pool *WorkerPool) worker() {
-	for t := range pool.tasksChan {
-		t.Err = t.Do()
-		pool.resultsChan <- t
+	// reduce the waiting number of workers if the worker exists
+	defer pool.workersWg.Done()
+
+	for {
+		select {
+		case <-pool.quit:
+			return
+		case task, ok := <-pool.tasksChan:
+			if !ok {
+				return // worker exits if tasksChan is closed
+			}
+			task.Err = task.Do()
+			pool.resultsChan <- task
+		}
 	}
 }
 
-// Retrieve results of the tasks
-func (pool *WorkerPool) results() []Task {
-	tasks := make([]Task, pool.tasksSize)
-	for i := 0; i < pool.tasksSize; i++ {
-		tasks[i] = <-pool.resultsChan
-	}
-
-	return tasks
-}
-
+// Start create worker goroutines with size of PoolSize
 func (pool *WorkerPool) Start() {
-	for i := 0; i < pool.PoolSize; i++ {
+	// set the counter for WaitGroup
+	pool.workersWg.Add(pool.PoolSize)
+	for _ = range pool.PoolSize {
 		go pool.worker()
 	}
+}
+
+func (pool *WorkerPool) Stop() {
+	close(pool.tasksChan)
+
+	pool.workersWg.Wait() // waits for all workers exists
+	close(pool.resultsChan)
+	close(pool.quit)
 }
 
 // Implement a worker pool using goroutines and channels
 func main() {
 	t := time.Now()
-
-	const numWorkers = 2
-
 	tasks := []Task{
-		{Id: 0, f: func() error { time.Sleep(10 * time.Second); fmt.Println(0); return nil }},
-		{Id: 1, f: func() error { time.Sleep(time.Second); fmt.Println(1); return errors.New("error") }},
-		{Id: 2, f: func() error { fmt.Println(2); return errors.New("error") }},
+		{Id: 0, f: func() error { fmt.Printf("executing task %d\n", 0); time.Sleep(10 * time.Second); return nil }},
+		{Id: 1, f: func() error { fmt.Printf("executing task %d\n", 1); time.Sleep(time.Second); fmt.Println(1); return errors.New("error") }},
+		{Id: 2, f: func() error { fmt.Printf("executing task %d\n", 2); return errors.New("error") }},
 	}
 
 	// create a work pool that includes the tasks and [numWorkers] of workers(pool size)
-	wp := NewWorkerPool(tasks, numWorkers)
+	const numWorkers = 2
+	wp := NewWorkerPool(numWorkers)
 	wp.Start()
 
-	tasks = wp.Results()
-	fmt.Printf("All tasks finished, timeElapsed: %f s\n", time.Now().Sub(t).Seconds())
-	for _, t := range tasks {
-		fmt.Printf("result of task %d is %v\n", t.Id, t.Err)
+	// submit tasks
+	for _, task := range tasks {
+		wp.Submit(task)
 	}
 
+	go func() {
+		wp.Stop()
+	}()
+
+	results := wp.Results()
+	for r := range results {
+		fmt.Printf("result of task %d is %v\n", r.Id, r.Err)
+	}
+
+	fmt.Printf("All tasks finished, timeElapsed: %f s\n", time.Now().Sub(t).Seconds())
 }
