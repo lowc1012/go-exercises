@@ -37,7 +37,7 @@ type Task struct {
 	f   func() error
 }
 
-// Do a task
+// Do execute a task
 func (t *Task) Do() error {
 	return t.f()
 }
@@ -46,7 +46,7 @@ type WorkerPool struct {
 	PoolSize    int
 	tasksChan   chan Task
 	resultsChan chan Task
-	quit        chan bool
+	quit        chan struct{}
 	workersWg   sync.WaitGroup
 }
 
@@ -55,13 +55,14 @@ func (pool *WorkerPool) Submit(task Task) {
 	pool.tasksChan <- task
 }
 
+// NewWorkerPool initialize a worker pool
 func NewWorkerPool(numWorker int) *WorkerPool {
 	const buffSize = 100
 	wp := &WorkerPool{
 		PoolSize:    numWorker,
 		tasksChan:   make(chan Task, buffSize),
 		resultsChan: make(chan Task, buffSize),
-		quit:        make(chan bool),
+		quit:        make(chan struct{}),
 	}
 
 	return wp
@@ -72,14 +73,15 @@ func (pool *WorkerPool) Results() <-chan Task {
 	return pool.resultsChan
 }
 
-// worker keeps consuming tasks from `tasksChan`, and sends the result to results channel
+// worker keeps consuming tasks from `tasksChan`, and outputting the result to resultsChan
 func (pool *WorkerPool) worker() {
-	// reduce the waiting number of workers if the worker exists
+	// decrement the WaitGroup counter when the worker exits
 	defer pool.workersWg.Done()
 
 	for {
 		select {
 		case <-pool.quit:
+			//  worker exits if the quit channel is closed or a message is received
 			return
 		case task, ok := <-pool.tasksChan:
 			if !ok {
@@ -101,11 +103,9 @@ func (pool *WorkerPool) Start() {
 }
 
 func (pool *WorkerPool) Stop() {
-	close(pool.tasksChan)
-
+	close(pool.tasksChan) // close the tasksChan to make all workers exits
 	pool.workersWg.Wait() // waits for all workers exists
 	close(pool.resultsChan)
-	close(pool.quit)
 }
 
 // Implement a worker pool using goroutines and channels
@@ -127,12 +127,11 @@ func main() {
 		wp.Submit(task)
 	}
 
-	go func() {
-		wp.Stop()
-	}()
+	// (blocking) Stop the worker pool after all tasks are submitted
+	wp.Stop()
 
-	results := wp.Results()
-	for r := range results {
+	// Print results from the worker pool resultsChan
+	for r := range wp.Results() {
 		fmt.Printf("result of task %d is %v\n", r.Id, r.Err)
 	}
 
