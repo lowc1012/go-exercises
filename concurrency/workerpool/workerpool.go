@@ -22,13 +22,40 @@
   Use goroutine to spawn the worker and implement queue by channel
 */
 
-package main
+// Example: Implement a worker pool using goroutines and channels
+// func example() {
+// 	t := time.Now()
+// 	tasks := []Task{
+// 		{Id: 0, f: func() error { fmt.Printf("executing task %d\n", 0); time.Sleep(10 * time.Second); return nil }},
+// 		{Id: 1, f: func() error { fmt.Printf("executing task %d\n", 1); time.Sleep(time.Second); fmt.Println(1); return errors.New("error") }},
+// 		{Id: 2, f: func() error { fmt.Printf("executing task %d\n", 2); return errors.New("error") }},
+// 	}
+//
+// 	// create a work pool that includes the tasks and [numWorkers] of workers(pool size)
+// 	const numWorkers = 2
+// 	wp := NewWorkerPool(numWorkers)
+// 	wp.Start()
+//
+// 	// submit tasks
+// 	for _, task := range tasks {
+// 		wp.Submit(task)
+// 	}
+//
+// 	// (blocking) Stop the worker pool after all tasks are submitted
+// 	wp.Stop()
+//
+// 	// Print results from the worker pool resultsChan
+// 	for r := range wp.Results() {
+// 		fmt.Printf("result of task %d is %v\n", r.Id, r.Err)
+// 	}
+//
+// 	fmt.Printf("All tasks finished, timeElapsed: %f s\n", time.Now().Sub(t).Seconds())
+// }
+
+package workerpool
 
 import (
-	"errors"
-	"fmt"
 	"sync"
-	"time"
 )
 
 type Task struct {
@@ -106,34 +133,4 @@ func (pool *WorkerPool) Stop() {
 	close(pool.tasksChan) // close the tasksChan to make all workers exits
 	pool.workersWg.Wait() // waits for all workers exists
 	close(pool.resultsChan)
-}
-
-// Implement a worker pool using goroutines and channels
-func main() {
-	t := time.Now()
-	tasks := []Task{
-		{Id: 0, f: func() error { fmt.Printf("executing task %d\n", 0); time.Sleep(10 * time.Second); return nil }},
-		{Id: 1, f: func() error { fmt.Printf("executing task %d\n", 1); time.Sleep(time.Second); fmt.Println(1); return errors.New("error") }},
-		{Id: 2, f: func() error { fmt.Printf("executing task %d\n", 2); return errors.New("error") }},
-	}
-
-	// create a work pool that includes the tasks and [numWorkers] of workers(pool size)
-	const numWorkers = 2
-	wp := NewWorkerPool(numWorkers)
-	wp.Start()
-
-	// submit tasks
-	for _, task := range tasks {
-		wp.Submit(task)
-	}
-
-	// (blocking) Stop the worker pool after all tasks are submitted
-	wp.Stop()
-
-	// Print results from the worker pool resultsChan
-	for r := range wp.Results() {
-		fmt.Printf("result of task %d is %v\n", r.Id, r.Err)
-	}
-
-	fmt.Printf("All tasks finished, timeElapsed: %f s\n", time.Now().Sub(t).Seconds())
 }
