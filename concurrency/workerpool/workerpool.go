@@ -61,12 +61,12 @@ import (
 type Task struct {
 	Id  int
 	Err error
-	f   func() error
+	F   func() error
 }
 
 // Do execute a task
 func (t *Task) Do() error {
-	return t.f()
+	return t.F()
 }
 
 type WorkerPool struct {
