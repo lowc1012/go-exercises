@@ -17,6 +17,8 @@ func main() {
         log.Fatalf("Failed to listen on: %v", err)
     }
 
+    defer conn.Close()
+
     // create a client instance
     client := pb.NewCalculatorServiceClient(conn)
 
