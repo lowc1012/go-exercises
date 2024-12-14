@@ -22,4 +22,5 @@ func main() {
 
     // call the function
     doSum(client)
+    doPrimeNumberDecomposition(client)
 }
