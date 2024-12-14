@@ -14,3 +14,17 @@ func (s *Server) Greet(ctx context.Context, req *pb.GreetRequest) (*pb.GreetResp
         Result: fmt.Sprintf("Hello %s %s", req.FirstName, req.LastName),
     }, nil
 }
+
+func (s *Server) GreetManyTimes(req *pb.GreetRequest, stream pb.GreetService_GreetManyTimesServer) error {
+    log.Printf("GreetManyTimes function was invoked with: %v\n", req)
+
+    for i := 0; i < 10; i++ {
+        err := stream.Send(&pb.GreetResponse{
+            Result: fmt.Sprintf("Hello %s %s number %d", req.FirstName, req.LastName, i),
+        })
+        if err != nil {
+            return err
+        }
+    }
+    return nil
+}
