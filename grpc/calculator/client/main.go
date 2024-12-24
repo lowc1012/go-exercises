@@ -26,4 +26,5 @@ func main() {
     doSum(client)
     doPrimeNumberDecomposition(client)
     doAverage(client)
+    doMax(client)
 }

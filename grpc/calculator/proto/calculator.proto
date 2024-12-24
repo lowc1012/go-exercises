@@ -7,9 +7,11 @@ option go_package = "github.com/lowc1012/go-exercises/grpc/calculator/proto";
 import "sum.proto";
 import "prime_number.proto";
 import "average.proto";
+import "max.proto";
 
 service CalculatorService {
   rpc Sum (SumRequest) returns (SumResponse);
   rpc PrimeNumberDecomposition (PrimeNumberRequest) returns (stream PrimeNumberResponse);
   rpc Average (stream AvgRequest) returns (AvgResponse);
+  rpc Max (stream MaxRequest) returns (stream MaxResponse);
 }
